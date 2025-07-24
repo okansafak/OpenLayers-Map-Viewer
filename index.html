@@ -1,300 +1,140 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenLayers Map Application</title>
+    <title>OpenLayers Gelişmiş Harita Görüntüleyici</title>
     <!-- OpenLayers CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v9.1.0/ol.css">
     <style>
         html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
             background: #f4f6fa;
         }
-        #map {
-            width: 100vw;
-            height: 100vh;
+        #map { width: 100vw; height: 100vh; background: #f4f6fa; }
+        #basemap-switcher, .info-panel, #layer-list-sidebar {
+            position: absolute; background: #fff; border-radius: 12px;
+            box-shadow: 0 4px 24px 0 rgba(0,0,0,0.10), 0 1.5px 4px 0 rgba(0,0,0,0.08);
+            border: 1px solid #e3e7ef;
         }
         #basemap-switcher {
-            position: absolute;
-            right: 28px;
-            bottom: 28px;
-            z-index: 1200;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.10);
-            border: 1px solid #e3e7ef;
-            padding: 8px 14px 8px 14px;
-            font-size: 1rem;
-            color: #2d3a4a;
-        }
-        #basemap-switcher select {
-            font-size: 1rem;
-            border-radius: 7px;
-            border: 1px solid #d1d7e6;
-            padding: 5px 10px;
-            background: #f8fafc;
-            outline: none;
+            right: 28px; bottom: 28px; z-index: 1200;
+            padding: 8px 14px;
         }
         .info-panel {
-            position: absolute;
-            top: 24px;
-            left: 24px;
-            background: #fff;
-            box-shadow: 0 4px 24px 0 rgba(0,0,0,0.10), 0 1.5px 4px 0 rgba(0,0,0,0.08);
-            padding: 24px 20px 18px 20px;
-            border-radius: 16px;
-            z-index: 1000;
-            max-width: 370px;
-            min-width: 270px;
-            border: 1px solid #e3e7ef;
-        }
-        .info-panel h3 {
-            margin-top: 0;
-            font-size: 1.3rem;
-            color: #2d3a4a;
-            letter-spacing: 0.5px;
-        }
-        .info-panel h4 {
-            margin-bottom: 6px;
-            margin-top: 18px;
-            font-size: 1.08rem;
-            color: #3b4a5a;
-        }
-        .info-panel input, .info-panel select {
-            width: 100%;
-            margin-bottom: 8px;
-            padding: 8px 10px;
-            border: 1px solid #d1d7e6;
-            border-radius: 7px;
-            font-size: 1rem;
-            background: #f8fafc;
-            transition: border 0.2s;
-            outline: none;
-        }
-        .info-panel input:focus, .info-panel select:focus {
-            border: 1.5px solid #4a90e2;
-            background: #fff;
-        }
-        .info-panel button {
-            width: 100%;
-            margin-bottom: 8px;
-            padding: 9px 0;
-            background: linear-gradient(90deg, #4a90e2 60%, #357ab8 100%);
-            color: #fff;
-            border: none;
-            border-radius: 7px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            box-shadow: 0 1.5px 4px 0 rgba(0,0,0,0.07);
-            transition: background 0.2s, box-shadow 0.2s;
-        }
-        .info-panel button:hover {
-            background: linear-gradient(90deg, #357ab8 60%, #4a90e2 100%);
-            box-shadow: 0 4px 12px 0 rgba(74,144,226,0.10);
-        }
-        .info-panel hr {
-            border: none;
-            border-top: 1px solid #e3e7ef;
-            margin: 18px 0 14px 0;
-        }
-        #drop-zone {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            padding: 24px 32px;
-            background: rgba(44, 62, 80, 0.85);
-            color: #fff;
-            border-radius: 16px;
-            text-align: center;
-            z-index: 999;
-            pointer-events: none;
-            opacity: 0;
-            font-size: 1.1rem;
-            letter-spacing: 0.2px;
-            transition: opacity 0.3s;
-            box-shadow: 0 4px 24px 0 rgba(0,0,0,0.13);
-        }
-        body.dragover #drop-zone {
-            opacity: 1;
+            top: 24px; left: 24px; z-index: 1000;
+            padding: 24px 20px 18px; max-width: 370px; min-width: 270px;
         }
         #layer-list-sidebar {
-            position: absolute;
-            top: 24px;
-            right: 24px;
-            width: 300px;
-            background: #fff;
-            border-radius: 16px;
-            box-shadow: 0 4px 24px 0 rgba(0,0,0,0.10), 0 1.5px 4px 0 rgba(0,0,0,0.08);
-            border: 1px solid #e3e7ef;
-            z-index: 1001;
-            padding: 18px 16px 12px 16px;
-            min-height: 120px;
-            max-height: 70vh;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
+            top: 24px; right: 24px; width: 300px; z-index: 1001;
+            padding: 18px 16px 12px; min-height: 120px; max-height: 70vh; overflow-y: auto;
         }
-        #layer-list-sidebar h4 {
-            margin: 0 0 10px 0;
-            font-size: 1.08rem;
-            color: #3b4a5a;
+        h3 { margin-top: 0; font-size: 1.3rem; color: #2d3a4a; }
+        h4 { margin-bottom: 10px; margin-top: 18px; font-size: 1.08rem; color: #3b4a5a; }
+        .info-panel input, .info-panel select, #basemap-switcher select {
+            width: 100%; box-sizing: border-box; margin-bottom: 8px;
+            padding: 8px 10px; border: 1px solid #d1d7e6; border-radius: 7px;
+            font-size: 1rem; background: #f8fafc; outline: none;
         }
-        #layer-list {
-            list-style:none;
-            padding:0;
-            margin:6px 0 0 0;
+        .info-panel button {
+            width: 100%; margin-bottom: 8px; padding: 9px 0;
+            background: linear-gradient(90deg, #4a90e2 60%, #357ab8 100%);
+            color: #fff; border: none; border-radius: 7px; font-size: 1rem;
+            font-weight: 500; cursor: pointer; transition: background 0.2s;
         }
+        .info-panel button:hover { background: linear-gradient(90deg, #357ab8 60%, #4a90e2 100%); }
+        .info-panel button:disabled { background: #e0e0e0 !important; color: #888 !important; cursor: not-allowed !important; }
+        hr { border: none; border-top: 1px solid #e3e7ef; margin: 18px 0 14px 0; }
+        #layer-list { list-style:none; padding:0; margin:0; }
         #layer-list li {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: #fff;
-            border-radius: 7px;
-            margin-bottom: 7px;
-            padding: 7px 10px 7px 10px;
-            box-shadow: 0 1.5px 4px 0 rgba(0,0,0,0.04);
-            font-size: 0.98rem;
+            display: flex; align-items: center; justify-content: space-between;
+            background: #fff; border-radius: 7px; margin-bottom: 7px;
+            padding: 7px 10px; font-size: 0.98rem; box-shadow: 0 1.5px 4px 0 rgba(0,0,0,0.04);
         }
-        #layer-list li b {
-            flex: 1;
-            color: #2d3a4a;
-            font-weight: 500;
-            font-size: 1.01rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        .layer-name-container { display: flex; align-items: center; flex: 1; overflow: hidden; }
+        .layer-name-container b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+        .layer-loader {
+            border: 3px solid #f3f3f3; border-top: 3px solid #4a90e2; border-radius: 50%;
+            width: 14px; height: 14px; animation: spin 1s linear infinite; margin-right: 8px; flex-shrink: 0;
         }
-        #layer-list li button {
-            width: auto;
-            min-width: 32px;
-            margin: 0 0 0 6px;
-            padding: 5px 0;
-            border-radius: 5px;
-            background: #f4f6fa;
-            color: #4a90e2;
-            border: 1px solid #e3e7ef;
-            font-size: 1.1rem;
-            font-weight: 600;
-            box-shadow: none;
-            transition: background 0.2s, color 0.2s;
+        #layer-list-sidebar .buttons-container button {
+            width: auto; min-width: 32px; margin: 0 0 0 6px; padding: 5px 0;
+            border-radius: 5px; background: #f4f6fa; color: #4a90e2;
+            border: 1px solid #e3e7ef; font-size: 1.1rem; box-shadow: none;
         }
-        #layer-list li button:hover {
-            background: #eaf2fb;
-            color: #357ab8;
+        #loader, #drop-zone {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            align-items: center; justify-content: center; z-index: 9999;
         }
-        @media (max-width: 600px) {
-            .info-panel {
-                left: 0;
-                right: 0;
-                top: 0;
-                max-width: 100vw;
-                min-width: 0;
-                border-radius: 0 0 16px 16px;
-                padding: 12px 6vw 10px 6vw;
-            }
-        }
-        #get-layers-btn:disabled {
-          background: #e0e0e0 !important;
-          color: #888 !important;
-          border: 1px solid #ccc !important;
-          opacity: 0.5 !important;
-          cursor: not-allowed !important;
-        }
-        #loader {
-            display:none;
-            position:fixed;
-            top:0;
-            left:0;
-            width:100vw;
-            height:100vh;
-            background:rgba(255,255,255,0.45);
-            z-index:2000;
-            align-items:center;
-            justify-content:center;
-        }
-        #loader div {
-            background:#fff;
-            padding:28px 36px;
-            border-radius:16px;
-            box-shadow:0 4px 24px 0 rgba(0,0,0,0.13);
-            display:flex;
-            flex-direction:column;
-            align-items:center;
-        }
-        @keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+        #loader { background: rgba(255,255,255,0.65); }
+        #loader > div { background:#fff; padding:28px 36px; border-radius:16px; display:flex; flex-direction:column; align-items:center; box-shadow: 0 4px 24px rgba(0,0,0,0.15); }
+        #drop-zone { background: rgba(0,0,0,0.5); color: white; font-size: 2em; text-align: center; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <!-- Map container -->
     <div id="map"></div>
-
-    <!-- Drag-and-drop info area -->
-    <div id="drop-zone">Drag and drop a supported file here (.geojson, .kml, .gpx, .gml, .igc)</div>
-
-    <!-- Loader -->
     <div id="loader">
         <div>
             <div style="border:6px solid #e3e7ef;border-top:6px solid #4a90e2;border-radius:50%;width:38px;height:38px;animation:spin 1s linear infinite;"></div>
-            <div style="margin-top:14px;font-size:1.08rem;color:#357ab8;">Loading...</div>
+            <div style="margin-top:14px;font-size:1.08rem;color:#357ab8;">Yükleniyor...</div>
         </div>
     </div>
+    <div id="drop-zone">Desteklenen bir dosyayı buraya bırakın</div>
 
-    <!-- Service add and info panel -->
     <div class="info-panel">
-        <h3>OpenLayers Map Viewer</h3>
-        <p>
-            Drag & drop files (.geojson, .kml, .gpx) or add a map service below.
-        </p>
+        <h3>Harita Görüntüleyici</h3>
+        
+        <h4>Dosya Yükle</h4>
+        <p style="font-size:0.85em; color:#555; margin-top:0;">Dosya sürükleyip bırakın veya seçin.<br>Desteklenenler: GeoJSON, KML, DXF, SHP (ZIP)</p>
+        <input type="file" id="file-input" accept=".geojson,.json,.kml,.dxf,.shp,.shx,.dbf,.prj,.zip" style="display:none;" multiple>
+        <button type="button" id="file-btn">Dosya Seç ve Yükle</button>
+        
         <hr>
-        <h4>Add Map Service</h4>
-        <label for="service-type">Service Type:</label>
+
+        <h4>Servis Ekle</h4>
+        <label for="service-type">Servis Tipi:</label>
         <select id="service-type">
             <option value="wms">WMS</option>
             <option value="wfs">WFS</option>
             <option value="mapserver">ArcGIS MapServer</option>
             <option value="featureserver">ArcGIS FeatureServer</option>
         </select>
-        
-        <label for="service-url" style="margin-top:8px; display:block;">Service URL:</label>
-        <input type="text" id="service-url" placeholder="Enter service URL...">
-        
-        <button id="get-layers-btn" style="margin-top:8px;">Get Layers</button>
-        
-        <select id="service-layers-select" style="width:100%;margin-top:5px;display:none;"></select>
-        
-        <button id="add-layer-btn" style="display:none;">Add Layer</button>
+        <label for="service-url" style="margin-top:8px; display:block;">Servis URL:</label>
+        <input type="text" id="service-url" placeholder="Servis URL'si girin...">
+        <button id="get-layers-btn" style="margin-top:8px;">Katmanları Getir</button>
+        <select id="service-layers-select" style="display:none;"></select>
+        <button id="add-layer-btn" style="display:none;">Katman Ekle</button>
     </div>
 
-    <!-- Layer list -->
     <div id="layer-list-sidebar">
-        <h4>Layers</h4>
+        <h4>Katmanlar</h4>
         <ul id="layer-list"></ul>
     </div>
 
-    <!-- Basemap switcher -->
     <div id="basemap-switcher">
-        <label for="basemap-select" style="font-size:0.98rem;">Basemap:</label>
+        <label for="basemap-select" style="font-size:0.98rem;">Altlık:</label>
         <select id="basemap-select">
             <option value="osm">OpenStreetMap</option>
             <option value="google_street">Google Streets</option>
             <option value="google_sat">Google Satellite</option>
             <option value="google_hybrid">Google Hybrid</option>
+            <option value="esri_world">Esri World</option>
+            <option value="esri_sat">Esri Satellite</option>
+            <option value="carto_light">Carto Light</option>
+            <option value="carto_dark">Carto Dark</option>
         </select>
     </div>
 
-    <!-- OpenLayers JavaScript -->
+    <!-- GEREKLİ KÜTÜPHANELER -->
     <script src="https://cdn.jsdelivr.net/npm/ol@v9.1.0/dist/ol.js"></script>
-    
+    <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/dxf-parser@latest/dist/dxf-parser.js"></script>
+
     <script>
-        // --- DEMO SERVICE URLS ---
+        // --- DEĞİŞKENLER VE SABİTLER ---
         const DEMO_SERVICES = {
             wms: 'https://view.eumetsat.int/geoserver/ows?service=WMS',
             wfs: 'https://view.eumetsat.int/geoserver/ows?service=WFS',
@@ -302,24 +142,26 @@
             featureserver: 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/OilSandsProjectBoundaries/FeatureServer'
         };
 
-        // --- MAP INITIALIZATION ---
         const basemaps = {
             osm: new ol.layer.Tile({ source: new ol.source.OSM() }),
-            google_street: new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}' }) }),
-            google_sat: new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}' }) }),
-            google_hybrid: new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}' }) })
+            google_street: new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', attributions: '© Google' }) }),
+            google_sat: new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', attributions: '© Google' }) }),
+            google_hybrid: new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attributions: '© Google' }) }),
+            esri_world: new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', attributions: 'Tiles © Esri' }) }),
+            esri_sat: new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attributions: 'Tiles © Esri' }) }),
+            carto_light: new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', attributions: '© CartoDB' }) }),
+            carto_dark: new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', attributions: '© CartoDB' }) })
         };
 
         const map = new ol.Map({
             target: 'map',
             layers: [basemaps.osm],
-            view: new ol.View({
-                center: ol.proj.fromLonLat([35, 39]),
-                zoom: 6
-            })
+            view: new ol.View({ center: ol.proj.fromLonLat([35, 39]), zoom: 6 })
         });
 
-        // --- UI ELEMENT REFERENCES ---
+        const layerManager = [];
+
+        // --- DOM ELEMENTLERİ ---
         const loader = document.getElementById('loader');
         const serviceTypeSelect = document.getElementById('service-type');
         const serviceUrlInput = document.getElementById('service-url');
@@ -327,85 +169,69 @@
         const serviceLayersSelect = document.getElementById('service-layers-select');
         const addLayerBtn = document.getElementById('add-layer-btn');
         const basemapSelect = document.getElementById('basemap-select');
+        const fileInput = document.getElementById('file-input');
+        const fileBtn = document.getElementById('file-btn');
+        const dropZone = document.getElementById('drop-zone');
 
-        // --- LAYER MANAGEMENT ---
-        const layerManager = [];
-
+        // --- KATMAN YÖNETİMİ FONKSİYONLARI ---
         function updateLayerList() {
             const ul = document.getElementById('layer-list');
             ul.innerHTML = '';
             layerManager.forEach((item, idx) => {
                 const li = document.createElement('li');
-                let name = item.name || 'Unnamed Layer';
-                li.innerHTML = `<b>${name}</b>` +
-                    `<button onclick="zoomToLayer(${idx})" title="Zoom to Layer">🔍</button>` +
-                    `<button onclick="toggleLayer(${idx})" title="Toggle Visibility">${item.layer.getVisible() ? '👁️' : '🚫'}</button>` +
-                    `<button onclick="removeLayer(${idx})" title="Remove">❌</button>`;
+                const loaderHtml = item.isLoading ? '<div class="layer-loader"></div>' : '';
+                li.innerHTML = `
+                    <div class="layer-name-container">${loaderHtml}<b>${item.name}</b></div>
+                    <div class="buttons-container">
+                        <button onclick="zoomToLayer(${idx})" title="Yakınlaş">🔍</button>
+                        <button onclick="toggleLayer(${idx})" title="Aç/Kapa">${item.layer.getVisible() ? '👁️' : '🚫'}</button>
+                        <button onclick="removeLayer(${idx})" title="Sil">❌</button>
+                    </div>`;
                 ul.appendChild(li);
             });
         }
 
         async function zoomToLayer(idx) {
+            const item = layerManager[idx];
+            if (!item) return;
             loader.style.display = 'flex';
             try {
-                const item = layerManager[idx];
-                if (!item) return;
-
-                const view = map.getView();
-                let extent = null;
-
-                if (item.layer instanceof ol.layer.Vector) {
-                    extent = item.layer.getSource().getExtent();
-                    if (extent && !ol.extent.isEmpty(extent)) {
-                        view.fit(extent, { maxZoom: 16, duration: 500, padding: [50, 50, 50, 50] });
-                        return;
+                let extent;
+                const source = item.layer.getSource();
+                if (source instanceof ol.source.Vector) {
+                    // WFS verisinin yüklenmesini bekle
+                    if (source.getState() !== 'ready') {
+                         await new Promise(resolve => {
+                            source.once('featuresloadend', resolve);
+                            source.once('featuresloaderror', resolve);
+                        });
                     }
-                }
-
-                if (item.type === 'WMS' && item.wmsUrl && item.layerName) {
-                    const getCapUrl = item.wmsUrl + (item.wmsUrl.includes('?') ? '&' : '?') + 'service=WMS&request=GetCapabilities';
+                    extent = source.getExtent();
+                } else if (item.type === 'WMS') {
+                    // WMS extent'ini GetCapabilities'ten al
+                    const getCapUrl = `${item.serviceUrl.split('?')[0]}?service=WMS&request=GetCapabilities`;
                     const resp = await fetch(getCapUrl);
                     if (resp.ok) {
                         const text = await resp.text();
-                        const capabilities = new ol.format.WMSCapabilities().read(text);
+                        const caps = new ol.format.WMSCapabilities().read(text);
                         const findLayer = (layers, name) => {
-                            for (const lyr of layers) {
-                                if (lyr.Name === name) return lyr;
-                                if (lyr.Layer) {
-                                    const found = findLayer(lyr.Layer, name);
-                                    if (found) return found;
-                                }
-                            }
-                            return null;
+                            for (const lyr of layers) { if (lyr.Name === name) return lyr; if (lyr.Layer) { const found = findLayer(lyr.Layer, name); if (found) return found; } } return null;
                         };
-                        let targetLayer = findLayer(capabilities.Capability.Layer.Layer, item.layerName);
+                        const targetLayer = findLayer(caps.Capability.Layer.Layer, item.layerId);
                         if (targetLayer && targetLayer.EX_GeographicBoundingBox) {
-                             extent = ol.proj.transformExtent(targetLayer.EX_GeographicBoundingBox, 'EPSG:4326', view.getProjection());
-                        }
-                    }
-                }
-
-                if ((item.type === 'ArcGIS MapServer' || item.type === 'ArcGIS FeatureServer') && item.serviceUrl) {
-                    const reqUrl = item.layerId ? `${item.serviceUrl}/${item.layerId}?f=json` : `${item.serviceUrl}?f=json`;
-                    const resp = await fetch(reqUrl);
-                    if (resp.ok) {
-                        const data = await resp.json();
-                        const serviceExtent = data.extent || data.fullExtent;
-                        if (serviceExtent) {
-                            const srid = serviceExtent.spatialReference.wkid || 4326;
-                            extent = ol.proj.transformExtent([serviceExtent.xmin, serviceExtent.ymin, serviceExtent.xmax, serviceExtent.ymax], `EPSG:${srid}`, view.getProjection());
+                            extent = ol.proj.transformExtent(targetLayer.EX_GeographicBoundingBox, 'EPSG:4326', map.getView().getProjection());
                         }
                     }
                 }
 
                 if (extent && !ol.extent.isEmpty(extent)) {
-                    view.fit(extent, { maxZoom: 16, duration: 500, padding: [50, 50, 50, 50] });
+                    map.getView().fit(extent, { padding: [100, 100, 100, 100], maxZoom: 17, duration: 800 });
                 } else {
-                    alert('Could not determine layer extent.');
+                    alert('Katman yayılımı bulunamadı.');
                 }
             } catch (e) {
-                console.error("Zoom to layer failed:", e);
-                alert('An error occurred while trying to zoom to the layer.');
+                console.error("Yakınlaşma hatası:", e);
+                alert('Katmana yakınlaşırken bir hata oluştu.');
             } finally {
                 loader.style.display = 'none';
             }
@@ -413,182 +239,202 @@
 
         function toggleLayer(idx) {
             const item = layerManager[idx];
-            if (item) {
-                const isVisible = item.layer.getVisible();
-                item.layer.setVisible(!isVisible);
-                updateLayerList();
-            }
+            if (item) { item.layer.setVisible(!item.layer.getVisible()); updateLayerList(); }
         }
 
         function removeLayer(idx) {
             const item = layerManager.splice(idx, 1)[0];
-            if (item) {
-                map.removeLayer(item.layer);
-                updateLayerList();
-            }
+            if (item) { map.removeLayer(item.layer); updateLayerList(); }
         }
 
-        // Expose functions to global scope for onclick attributes
         window.zoomToLayer = zoomToLayer;
         window.toggleLayer = toggleLayer;
         window.removeLayer = removeLayer;
-        
-        // --- EVENT LISTENERS ---
-        basemapSelect.addEventListener('change', (e) => {
-            const selectedKey = e.target.value;
-            // Remove all basemaps first
-             Object.values(basemaps).forEach(layer => map.removeLayer(layer));
-             // Add the new one at the bottom
-            map.getLayers().insertAt(0, basemaps[selectedKey]);
-        });
 
-        serviceTypeSelect.addEventListener('change', () => {
-            const type = serviceTypeSelect.value;
-            serviceUrlInput.value = DEMO_SERVICES[type] || '';
-            updateGetLayersBtnState();
-        });
+        // --- DOSYA YÜKLEME FONKSİYONLARI ---
+        async function handleFiles(files) {
+            if (!files || files.length === 0) return;
+            loader.style.display = 'flex';
+            const fileList = Array.from(files);
+            try {
+                const zipFile = fileList.find(f => f.name.toLowerCase().endsWith('.zip'));
+                if (zipFile) { await readShpFromZip(zipFile); return; }
 
-        serviceUrlInput.addEventListener('input', updateGetLayersBtnState);
+                const shpFile = fileList.find(f => f.name.toLowerCase().endsWith('.shp'));
+                if (shpFile) { await readShpFromFiles(fileList, shpFile); return; }
 
-        function updateGetLayersBtnState() {
-            getLayersBtn.disabled = !serviceUrlInput.value.trim();
+                for (const file of fileList) {
+                    const extension = file.name.split('.').pop().toLowerCase();
+                    const content = await file.text();
+                    await parseAndAddFile(content, extension, file.name);
+                }
+            } catch (error) {
+                alert(`Dosya işlenirken hata oluştu: ${error.message}`);
+            } finally {
+                loader.style.display = 'none';
+                fileInput.value = '';
+            }
+        }
+
+        async function readShpFromZip(zipFile) {
+            const buffer = await zipFile.arrayBuffer();
+            const geojson = await shp.parseZip(buffer);
+            const features = new ol.format.GeoJSON().readFeatures(geojson, { dataProjection: 'EPSG:4326', featureProjection: map.getView().getProjection() });
+            addVectorLayer(features, zipFile.name);
+        }
+
+        async function readShpFromFiles(fileList, shpFile) {
+            const shxFile = fileList.find(f => f.name.toLowerCase().replace('.shp', '.shx') === shpFile.name.toLowerCase().replace('.shp', '.shx'));
+            const dbfFile = fileList.find(f => f.name.toLowerCase().replace('.shp', '.dbf') === shpFile.name.toLowerCase().replace('.shp', '.dbf'));
+            if (!shxFile || !dbfFile) throw new Error('SHP dosyası için .shx ve .dbf dosyaları da gereklidir.');
+            const [shpBuffer, dbfBuffer, shxBuffer] = await Promise.all([shpFile.arrayBuffer(), dbfFile.arrayBuffer(), shxFile.arrayBuffer()]);
+            const geojson = await shp.combine([shpBuffer, dbfBuffer, shxBuffer]);
+            const features = new ol.format.GeoJSON().readFeatures(geojson, { dataProjection: 'EPSG:4326', featureProjection: map.getView().getProjection() });
+            addVectorLayer(features, shpFile.name);
+        }
+
+        async function parseAndAddFile(content, extension, fileName) {
+            let features = [];
+            switch (extension) {
+                case 'geojson': case 'json':
+                    features = new ol.format.GeoJSON().readFeatures(content, { featureProjection: map.getView().getProjection() });
+                    break;
+                case 'kml':
+                    features = new ol.format.KML({ extractStyles: true }).readFeatures(content, { featureProjection: map.getView().getProjection() });
+                    break;
+                case 'dxf':
+                    const dxf = new DxfParser().parseSync(content);
+                    if (dxf && dxf.entities) {
+                        dxf.entities.forEach(entity => {
+                            let geometry;
+                            if (entity.type === 'LINE') geometry = new ol.geom.LineString(entity.vertices.map(v => [v.x, v.y]));
+                            else if (entity.type === 'LWPOLYLINE' || entity.type === 'POLYLINE') {
+                                const coords = entity.vertices.map(v => [v.x, v.y]);
+                                geometry = entity.shape ? new ol.geom.Polygon([coords]) : new ol.geom.LineString(coords);
+                            }
+                            if (geometry) features.push(new ol.Feature({ geometry }));
+                        });
+                    }
+                    break;
+            }
+            if (features && features.length > 0) addVectorLayer(features, fileName);
+            else alert(`${fileName} içinde okunabilir obje bulunamadı veya format desteklenmiyor.`);
+        }
+
+        function addVectorLayer(features, name) {
+            const vectorSource = new ol.source.Vector({ features });
+            const vectorLayer = new ol.layer.Vector({
+                source: vectorSource,
+                style: (feature) => feature.getStyle() || new ol.style.Style({
+                    fill: new ol.style.Fill({ color: 'rgba(255, 0, 0, 0.3)' }),
+                    stroke: new ol.style.Stroke({ color: '#ff0000', width: 2 }),
+                    image: new ol.style.Circle({ radius: 7, fill: new ol.style.Fill({ color: '#ff0000' }) })
+                })
+            });
+            map.addLayer(vectorLayer);
+            layerManager.push({ name, layer: vectorLayer, isLoading: false, type: 'File' });
+            updateLayerList();
+            const extent = vectorSource.getExtent();
+            if (extent && !ol.extent.isEmpty(extent)) map.getView().fit(extent, { padding: [100, 100, 100, 100], maxZoom: 17, duration: 800 });
         }
         
-        getLayersBtn.onclick = async () => {
-            const type = serviceTypeSelect.value;
-            const url = serviceUrlInput.value.trim();
+        // --- SERVİS EKLEME FONKSİYONLARI ---
+        async function fetchServiceLayers(type, url) {
+            if (!url) throw new Error("Servis URL'si boş olamaz.");
+            let layers = [];
+            if (type === 'wms') {
+                const resp = await fetch(`${url.split('?')[0]}?service=WMS&request=GetCapabilities`);
+                if (!resp.ok) throw new Error('WMS GetCapabilities isteği başarısız.');
+                const caps = new ol.format.WMSCapabilities().read(await resp.text());
+                layers = caps.Capability.Layer.Layer.map(l => ({ id: l.Name, name: l.Title || l.Name }));
+            } else if (type === 'wfs') {
+                const resp = await fetch(`${url.split('?')[0]}?service=WFS&request=GetCapabilities`);
+                if (!resp.ok) throw new Error('WFS GetCapabilities isteği başarısız.');
+                const xml = new DOMParser().parseFromString(await resp.text(), 'text/xml');
+                layers = Array.from(xml.getElementsByTagName('FeatureType')).map(ft => ({ id: ft.getElementsByTagName('Name')[0].textContent, name: ft.getElementsByTagName('Title')[0]?.textContent || ft.getElementsByTagName('Name')[0].textContent }));
+            } else if (type === 'mapserver' || type === 'featureserver') {
+                const resp = await fetch(`${url.replace(/\/$/, '')}?f=json`);
+                if (!resp.ok) throw new Error('ArcGIS servis isteği başarısız.');
+                const data = await resp.json();
+                if (!data.layers) throw new Error('Servis yanıtında katman bulunamadı.');
+                layers = data.layers.map(l => ({ id: l.id, name: l.name }));
+            }
+            return layers;
+        }
+
+        function addServiceLayer(type, url, layerId, layerName) {
+            let newLayer;
+            const layerInfo = { name: layerName, layer: null, isLoading: false, type: type.toUpperCase(), serviceUrl: url, layerId };
+            
+            if (type === 'wms' || type === 'wfs') layerInfo.isLoading = true;
+
+            if (type === 'wms') {
+                const source = new ol.source.ImageWMS({ url, params: {'LAYERS': layerId}, serverType: 'geoserver' });
+                source.on(['imageloadstart'], () => { layerInfo.isLoading = true; updateLayerList(); });
+                source.on(['imageloadend', 'imageloaderror'], () => { layerInfo.isLoading = false; updateLayerList(); });
+                newLayer = new ol.layer.Image({ source });
+            } else if (type === 'wfs') {
+                const wfsUrl = `${url.split('?')[0]}?service=WFS&version=1.1.0&request=GetFeature&typename=${encodeURIComponent(layerId)}&outputFormat=application/json&srsname=${map.getView().getProjection().getCode()}`;
+                const source = new ol.source.Vector({ format: new ol.format.GeoJSON(), url: wfsUrl });
+                source.on(['featuresloadstart'], () => { layerInfo.isLoading = true; updateLayerList(); });
+                source.on(['featuresloadend', 'featuresloaderror'], () => { layerInfo.isLoading = false; updateLayerList(); });
+                newLayer = new ol.layer.Vector({ source, style: new ol.style.Style({stroke: new ol.style.Stroke({color: 'blue', width: 2})}) });
+            } else if (type === 'mapserver') {
+                newLayer = new ol.layer.Tile({ source: new ol.source.TileArcGISRest({ url, params: {'LAYERS': 'show:' + layerId} }) });
+            } else if (type === 'featureserver') {
+                const featureUrl = `${url.replace(/\/$/, '')}/${layerId}/query?where=1=1&outFields=*&f=geojson`;
+                newLayer = new ol.layer.Vector({ source: new ol.source.Vector({ format: new ol.format.GeoJSON(), url: featureUrl }), style: new ol.style.Style({stroke: new ol.style.Stroke({color: 'green', width: 2})}) });
+            }
+
+            if (newLayer) {
+                layerInfo.layer = newLayer;
+                map.addLayer(newLayer);
+                layerManager.push(layerInfo);
+                updateLayerList();
+                alert(`Katman "${layerName}" eklendi.`);
+            }
+        }
+
+        // --- OLAY DİNLEYİCİLERİ VE BAŞLANGIÇ AYARLARI ---
+        basemapSelect.addEventListener('change', (e) => {
+            map.getLayers().forEach(layer => { if (Object.values(basemaps).includes(layer)) map.removeLayer(layer); });
+            map.getLayers().insertAt(0, basemaps[e.target.value]);
+        });
+
+        const mapContainer = map.getTargetElement();
+        mapContainer.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.display = 'flex'; });
+        mapContainer.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.style.display = 'none'; });
+        mapContainer.addEventListener('drop', (e) => { e.preventDefault(); dropZone.style.display = 'none'; handleFiles(e.dataTransfer.files); });
+        
+        fileBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        serviceUrlInput.addEventListener('input', () => getLayersBtn.disabled = !serviceUrlInput.value.trim());
+        serviceTypeSelect.addEventListener('change', () => serviceUrlInput.value = DEMO_SERVICES[serviceTypeSelect.value] || '');
+
+        getLayersBtn.addEventListener('click', async () => {
+            loader.style.display = 'flex';
             serviceLayersSelect.innerHTML = '';
             serviceLayersSelect.style.display = 'none';
             addLayerBtn.style.display = 'none';
-
-            if (!url) {
-                alert('Please enter a service URL.');
-                return;
-            }
-
-            loader.style.display = 'flex';
             try {
-                let layers = [];
-                if (type === 'wms') {
-                    layers = await fetchWmsLayers(url);
-                } else if (type === 'wfs') {
-                    layers = await fetchWfsLayers(url);
-                } else if (type === 'mapserver' || type === 'featureserver') {
-                    layers = await fetchArcGisLayers(url);
-                }
-
+                const layers = await fetchServiceLayers(serviceTypeSelect.value, serviceUrlInput.value.trim());
                 if (layers.length > 0) {
-                    layers.forEach(layer => {
-                        const opt = document.createElement('option');
-                        opt.value = layer.id;
-                        opt.textContent = layer.name;
-                        serviceLayersSelect.appendChild(opt);
-                    });
+                    layers.forEach(layer => serviceLayersSelect.add(new Option(layer.name, layer.id)));
                     serviceLayersSelect.style.display = 'block';
                     addLayerBtn.style.display = 'block';
-                } else {
-                    alert('No layers found at this service URL.');
-                }
-            } catch (e) {
-                alert('Error fetching layers: ' + e.message);
-                console.error(e);
-            } finally {
-                loader.style.display = 'none';
-            }
-        };
+                } else alert('Bu serviste katman bulunamadı.');
+            } catch (e) { alert(`Katmanlar alınamadı: ${e.message}`); } finally { loader.style.display = 'none'; }
+        });
 
-        addLayerBtn.onclick = () => {
-            const type = serviceTypeSelect.value;
-            const url = serviceUrlInput.value.trim();
-            const selectedOption = serviceLayersSelect.options[serviceLayersSelect.selectedIndex];
-            const layerId = selectedOption.value;
-            const layerName = selectedOption.textContent;
+        addLayerBtn.addEventListener('click', () => {
+            const selected = serviceLayersSelect.options[serviceLayersSelect.selectedIndex];
+            addServiceLayer(serviceTypeSelect.value, serviceUrlInput.value.trim(), selected.value, selected.textContent);
+        });
 
-            loader.style.display = 'flex';
-            try {
-                let newLayer;
-                let layerInfo = { name: layerName, type: '', layer: null };
-
-                if (type === 'wms') {
-                    newLayer = new ol.layer.Image({
-                        source: new ol.source.ImageWMS({ url, params: {'LAYERS': layerId}, serverType: 'geoserver' })
-                    });
-                    layerInfo.type = 'WMS';
-                    layerInfo.wmsUrl = url;
-                    layerInfo.layerName = layerId;
-                } else if (type === 'wfs') {
-                     const wfsUrl = `${url.split('?')[0]}?service=WFS&version=1.1.0&request=GetFeature&typename=${encodeURIComponent(layerId)}&outputFormat=application/json&srsname=${map.getView().getProjection().getCode()}`;
-                    newLayer = new ol.layer.Vector({
-                        source: new ol.source.Vector({ format: new ol.format.GeoJSON(), url: wfsUrl }),
-                        style: new ol.style.Style({ stroke: new ol.style.Stroke({ color: 'blue', width: 2 }) })
-                    });
-                     layerInfo.type = 'WFS';
-                } else if (type === 'mapserver') {
-                    newLayer = new ol.layer.Tile({
-                        source: new ol.source.TileArcGISRest({ url, params: {'LAYERS': 'show:' + layerId} })
-                    });
-                    layerInfo.type = 'ArcGIS MapServer';
-                    layerInfo.serviceUrl = url;
-                    layerInfo.layerId = layerId;
-                } else if (type === 'featureserver') {
-                    const featureUrl = `${url.replace(/\/$/, '')}/${layerId}/query?where=1=1&outFields=*&f=geojson`;
-                     newLayer = new ol.layer.Vector({
-                        source: new ol.source.Vector({ format: new ol.format.GeoJSON(), url: featureUrl }),
-                        style: new ol.style.Style({ stroke: new ol.style.Stroke({ color: 'green', width: 2 }) })
-                    });
-                    layerInfo.type = 'ArcGIS FeatureServer';
-                    layerInfo.serviceUrl = url;
-                    layerInfo.layerId = layerId;
-                }
-
-                if (newLayer) {
-                    layerInfo.layer = newLayer;
-                    map.addLayer(newLayer);
-                    layerManager.push(layerInfo);
-                    updateLayerList();
-                    alert(`Layer "${layerName}" added.`);
-                }
-            } catch (e) {
-                alert('Failed to add layer: ' + e.message);
-            } finally {
-                loader.style.display = 'none';
-            }
-        };
-
-        // --- SERVICE FETCHING FUNCTIONS ---
-        async function fetchWmsLayers(url) {
-            const getCapUrl = url + (url.includes('?') ? '&' : '?') + 'service=WMS&request=GetCapabilities';
-            const resp = await fetch(getCapUrl);
-            if (!resp.ok) throw new Error('WMS GetCapabilities request failed.');
-            const text = await resp.text();
-            const caps = new ol.format.WMSCapabilities().read(text);
-            return caps.Capability.Layer.Layer.map(l => ({ id: l.Name, name: l.Title }));
-        }
-
-        async function fetchWfsLayers(url) {
-            const getCapUrl = url + (url.includes('?') ? '&' : '?') + 'service=WFS&request=GetCapabilities';
-            const resp = await fetch(getCapUrl);
-            if (!resp.ok) throw new Error('WFS GetCapabilities request failed.');
-            const text = await resp.text();
-            const xml = new DOMParser().parseFromString(text, 'text/xml');
-            const featureTypes = Array.from(xml.getElementsByTagName('FeatureType'));
-            return featureTypes.map(ft => ({
-                id: ft.getElementsByTagName('Name')[0].textContent,
-                name: ft.getElementsByTagName('Title')[0]?.textContent || ft.getElementsByTagName('Name')[0].textContent
-            }));
-        }
-
-        async function fetchArcGisLayers(url) {
-            const resp = await fetch(url + '?f=json');
-            if (!resp.ok) throw new Error('ArcGIS service request failed.');
-            const data = await resp.json();
-            if (!data.layers) throw new Error('No layers found in service response.');
-            return data.layers.map(l => ({ id: l.id, name: l.name }));
-        }
-
-        // --- INITIALIZATION ---
+        // Başlangıç değerleri
         serviceUrlInput.value = DEMO_SERVICES[serviceTypeSelect.value];
-        updateGetLayersBtnState();
+        getLayersBtn.disabled = !serviceUrlInput.value.trim();
         updateLayerList();
 
     </script>
