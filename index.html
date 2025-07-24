@@ -418,6 +418,12 @@
                             alert('No suitable extent found for the layer.');
                         }
                         return;
+                    } else {
+                        // WFS katmanları için veri yüklenmemişse uyarı ver
+                        if (item.type === 'WFS') {
+                            alert('WFS katmanı henüz yüklenmedi veya veri yok. Lütfen birkaç saniye sonra tekrar deneyin.');
+                            return;
+                        }
                     }
                 }
 
@@ -614,7 +620,9 @@
         // extent dizisi harita projeksiyonunda "tüm dünya"ya yakınsa true döner
         function isWorldExtent(extent, proj) {
             if (!extent || extent.length !== 4) return false;
-            // EPSG:3857 için dünya kutusu yaklaşık [-20037508, -20037508, 20037508, 20037508]
+            window.zoomToLayer = zoomToLayer;
+            window.toggleLayer = toggleLayer;
+            window.removeLayer = removeLayer;
             if (proj && proj.getCode && proj.getCode() === 'EPSG:3857') {
                 const world = 20037508;
                 return (
@@ -652,6 +660,11 @@
             layerManager.splice(idx, 1);
             updateLayerList();
         }
+
+// Fonksiyonları global scope'a ekle
+window.zoomToLayer = zoomToLayer;
+window.toggleLayer = toggleLayer;
+window.removeLayer = removeLayer;
 
         // --- DESTEKLENEN DOSYA FORMATLARI İÇİN SÜRÜKLE & BIRAK ---
         const dragAndDropInteraction = new ol.interaction.DragAndDrop({
@@ -702,6 +715,89 @@
         const getLayersBtn = document.getElementById('get-layers-btn');
         const serviceLayersSelect = document.getElementById('service-layers-select');
         const addLayerBtn = document.getElementById('add-layer-btn');
+
+        // Dosya ekleme butonu: file-btn tıklanınca file-input'u tetikle
+        const fileBtn = document.getElementById('file-btn');
+        const fileInput = document.getElementById('file-input');
+        if (fileBtn && fileInput) {
+            fileBtn.addEventListener('click', function() {
+                fileInput.value = '';
+                fileInput.click();
+            });
+            fileInput.addEventListener('change', function(e) {
+                if (!fileInput.files || fileInput.files.length === 0) return;
+                const file = fileInput.files[0];
+                const fileName = file.name;
+                const ext = fileName.split('.').pop().toLowerCase();
+                const reader = new FileReader();
+                document.getElementById('loader').style.display = 'flex';
+                reader.onload = function(evt) {
+                    let features = null;
+                    let format = null;
+                    try {
+                        if (ext === 'geojson' || ext === 'json') {
+                            format = new ol.format.GeoJSON();
+                            features = format.readFeatures(evt.target.result, {featureProjection: map.getView().getProjection()});
+                        } else if (ext === 'kml') {
+                            format = new ol.format.KML();
+                            features = format.readFeatures(evt.target.result, {featureProjection: map.getView().getProjection()});
+                        } else if (ext === 'gpx') {
+                            format = new ol.format.GPX();
+                            features = format.readFeatures(evt.target.result, {featureProjection: map.getView().getProjection()});
+                        } else if (ext === 'gml') {
+                            format = new ol.format.GML();
+                            features = format.readFeatures(evt.target.result, {featureProjection: map.getView().getProjection()});
+                        } else if (ext === 'igc') {
+                            format = new ol.format.IGC();
+                            features = format.readFeatures(evt.target.result, {featureProjection: map.getView().getProjection()});
+                        } else {
+                            alert('Unsupported file format.');
+                            return;
+                        }
+                    } catch (err) {
+                        alert('File could not be read: ' + err.message);
+                        return;
+                    } finally {
+                        document.getElementById('loader').style.display = 'none';
+                    }
+                    if (features && features.length > 0) {
+                        const vectorSource = new ol.source.Vector({features: features});
+                        const lyr = new ol.layer.Vector({
+                            source: vectorSource,
+                            style: new ol.style.Style({
+                                fill: new ol.style.Fill({ color: 'rgba(255, 0, 0, 0.2)' }),
+                                stroke: new ol.style.Stroke({ color: 'red', width: 2 }),
+                                image: new ol.style.Circle({ radius: 7, fill: new ol.style.Fill({ color: 'red' }) })
+                            })
+                        });
+                        map.addLayer(lyr);
+                        layerManager.push({layer: lyr, name: fileName, type: 'File'});
+                        updateLayerList();
+                        const extent = vectorSource.getExtent();
+                        if (extent && extent.length === 4 && !ol.extent.isEmpty(extent)) {
+                            map.getView().fit(extent, {padding: [50,50,50,50], maxZoom: 16, duration: 500});
+                        } else {
+                            // Eğer extent boşsa, haritayı merkeze al ve yakınlaştır
+                            map.getView().setZoom(12);
+                            if (features.length > 0) {
+                                const geom = features[0].getGeometry();
+                                if (geom && geom.getType && geom.getType() === 'Point') {
+                                    const coords = geom.getCoordinates();
+                                    map.getView().setCenter(coords);
+                                }
+                            }
+                        }
+                    } else {
+                        alert('No features found in file.');
+                    }
+                };
+                reader.onerror = function() {
+                    document.getElementById('loader').style.display = 'none';
+                    alert('File could not be read.');
+                };
+                reader.readAsText(file);
+            });
+        }
 
         // Servis tipi değiştiğinde default URL getir
         serviceTypeSelect.addEventListener('change', function() {
@@ -841,33 +937,38 @@
                 document.getElementById('loader').style.display = 'none';
             }
         }
-        function addWmsLayerUnified(url) {
-            const select = serviceLayersSelect;
-            const layerName = select.value;
-            const layerTitle = select.options[select.selectedIndex].text;
-            if (!url || !layerName) {
-                alert('Please select a WMS URL and Layer.');
-                return;
-            }
-            const wmsLayer = new ol.layer.Image({
-                source: new ol.source.ImageWMS({
-                    url: url,
-                    params: {'LAYERS': layerName},
-                    serverType: 'geoserver',
-                    transition: 0
-                })
-            });
-            map.addLayer(wmsLayer);
-            layerManager.push({
-                layer: wmsLayer,
-                name: layerTitle,
-                type: 'WMS',
-                wmsUrl: url,
-                layerName: layerName
-            });
-            updateLayerList();
-            alert('WMS layer added.');
+function addWmsLayerUnified(url) {
+    document.getElementById('loader').style.display = 'flex';
+    try {
+        const select = serviceLayersSelect;
+        const layerName = select.value;
+        const layerTitle = select.options[select.selectedIndex].text;
+        if (!url || !layerName) {
+            alert('Please select a WMS URL and Layer.');
+            return;
         }
+        const wmsLayer = new ol.layer.Image({
+            source: new ol.source.ImageWMS({
+                url: url,
+                params: {'LAYERS': layerName},
+                serverType: 'geoserver',
+                transition: 0
+            })
+        });
+        map.addLayer(wmsLayer);
+        layerManager.push({
+            layer: wmsLayer,
+            name: layerTitle,
+            type: 'WMS',
+            wmsUrl: url,
+            layerName: layerName
+        });
+        updateLayerList();
+        alert('WMS layer added.');
+    } finally {
+        document.getElementById('loader').style.display = 'none';
+    }
+}
         // WFS
         async function fetchWfsLayersUnified(url) {
             document.getElementById('loader').style.display = 'flex';
@@ -903,32 +1004,37 @@
                 document.getElementById('loader').style.display = 'none';
             }
         }
-        function addWfsLayerUnified(url) {
-            const select = serviceLayersSelect;
-            const typeName = select.value;
-            const typeTitle = select.options[select.selectedIndex].text;
-            if (!url || !typeName) {
-                alert('Please select a WFS URL and Layer.');
-                return;
-            }
-            const wfsUrl = url.split('?')[0] +
-                '?service=WFS&version=1.1.0&request=GetFeature&typename=' + encodeURIComponent(typeName) + '&outputFormat=application/json' + '&srsname=' + map.getView().getProjection().getCode();
-            const vectorSource = new ol.source.Vector({
-                format: new ol.format.GeoJSON(),
-                url: wfsUrl,
-                strategy: ol.loadingstrategy.all
-            });
-            const wfsLayer = new ol.layer.Vector({
-                source: vectorSource,
-                style: new ol.style.Style({
-                    stroke: new ol.style.Stroke({ color: 'rgba(0, 0, 255, 1.0)', width: 2 })
-                })
-            });
-            map.addLayer(wfsLayer);
-            layerManager.push({layer: wfsLayer, name: typeTitle, type: 'WFS'});
-            updateLayerList();
-            alert('WFS layer added. Data loading...');
+function addWfsLayerUnified(url) {
+    document.getElementById('loader').style.display = 'flex';
+    try {
+        const select = serviceLayersSelect;
+        const typeName = select.value;
+        const typeTitle = select.options[select.selectedIndex].text;
+        if (!url || !typeName) {
+            alert('Please select a WFS URL and Layer.');
+            return;
         }
+        const wfsUrl = url.split('?')[0] +
+            '?service=WFS&version=1.1.0&request=GetFeature&typename=' + encodeURIComponent(typeName) + '&outputFormat=application/json' + '&srsname=' + map.getView().getProjection().getCode();
+        const vectorSource = new ol.source.Vector({
+            format: new ol.format.GeoJSON(),
+            url: wfsUrl,
+            strategy: ol.loadingstrategy.all
+        });
+        const wfsLayer = new ol.layer.Vector({
+            source: vectorSource,
+            style: new ol.style.Style({
+                stroke: new ol.style.Stroke({ color: 'rgba(0, 0, 255, 1.0)', width: 2 })
+            })
+        });
+        map.addLayer(wfsLayer);
+        layerManager.push({layer: wfsLayer, name: typeTitle, type: 'WFS'});
+        updateLayerList();
+        alert('WFS layer added. Data loading...');
+    } finally {
+        document.getElementById('loader').style.display = 'none';
+    }
+}
         // ArcGIS MapServer
         async function fetchArcGisMapLayersUnified(url) {
             document.getElementById('loader').style.display = 'flex';
@@ -957,32 +1063,37 @@
                 document.getElementById('loader').style.display = 'none';
             }
         }
-        function addArcGisMapLayerUnified(url) {
-            const select = serviceLayersSelect;
-            let layerId = select && select.style.display !== 'none' ? select.value : null;
-            let layerName = select && select.style.display !== 'none' && select.selectedIndex >= 0 ? select.options[select.selectedIndex].textContent : url;
-            let mapLayerUrl = url.replace(/\/$/, '');
-            let params = {};
-            if (layerId) {
-                params.LAYERS = 'show:' + layerId;
-            }
-            const arcgisLayer = new ol.layer.Tile({
-                source: new ol.source.TileArcGISRest({
-                    url: mapLayerUrl,
-                    params: params
-                })
-            });
-            map.addLayer(arcgisLayer);
-            layerManager.push({
-                layer: arcgisLayer,
-                name: layerName,
-                type: 'ArcGIS MapServer',
-                serviceUrl: mapLayerUrl,
-                layerId: layerId
-            });
-            updateLayerList();
-            alert('ArcGIS MapServer layer added.');
+function addArcGisMapLayerUnified(url) {
+    document.getElementById('loader').style.display = 'flex';
+    try {
+        const select = serviceLayersSelect;
+        let layerId = select && select.style.display !== 'none' ? select.value : null;
+        let layerName = select && select.style.display !== 'none' && select.selectedIndex >= 0 ? select.options[select.selectedIndex].textContent : url;
+        let mapLayerUrl = url.replace(/\/$/, '');
+        let params = {};
+        if (layerId) {
+            params.LAYERS = 'show:' + layerId;
         }
+        const arcgisLayer = new ol.layer.Tile({
+            source: new ol.source.TileArcGISRest({
+                url: mapLayerUrl,
+                params: params
+            })
+        });
+        map.addLayer(arcgisLayer);
+        layerManager.push({
+            layer: arcgisLayer,
+            name: layerName,
+            type: 'ArcGIS MapServer',
+            serviceUrl: mapLayerUrl,
+            layerId: layerId
+        });
+        updateLayerList();
+        alert('ArcGIS MapServer layer added.');
+    } finally {
+        document.getElementById('loader').style.display = 'none';
+    }
+}
         // ArcGIS FeatureServer
         async function fetchArcGisFeatureLayersUnified(url) {
             document.getElementById('loader').style.display = 'flex';
@@ -1011,32 +1122,37 @@
                 document.getElementById('loader').style.display = 'none';
             }
         }
-        function addArcGisFeatureLayerUnified(url) {
-            const select = serviceLayersSelect;
-            const layerId = select.value;
-            const layerName = select.options[select.selectedIndex].textContent;
-            if (!url || !layerId) {
-                alert('Please select a FeatureServer URL and Layer.');
-                return;
-            }
-            const featureUrl = url.replace(/\/$/, '') + '/' + layerId + '/query?where=1=1&outFields=*&f=geojson';
-            const vectorSource = new ol.source.Vector({
-                format: new ol.format.GeoJSON(),
-                url: featureUrl,
-                strategy: ol.loadingstrategy.all
-            });
-            const featureLayer = new ol.layer.Vector({
-                source: vectorSource,
-                style: new ol.style.Style({
-                    stroke: new ol.style.Stroke({ color: 'rgba(0, 128, 0, 1.0)', width: 2 }),
-                    fill: new ol.style.Fill({ color: 'rgba(0,128,0,0.1)' })
-                })
-            });
-            map.addLayer(featureLayer);
-            layerManager.push({layer: featureLayer, name: layerName, type: 'ArcGIS FeatureServer'});
-            updateLayerList();
-            alert('FeatureServer layer added. Data loading...');
+function addArcGisFeatureLayerUnified(url) {
+    document.getElementById('loader').style.display = 'flex';
+    try {
+        const select = serviceLayersSelect;
+        const layerId = select.value;
+        const layerName = select.options[select.selectedIndex].textContent;
+        if (!url || !layerId) {
+            alert('Please select a FeatureServer URL and Layer.');
+            return;
         }
+        const featureUrl = url.replace(/\/$/, '') + '/' + layerId + '/query?where=1=1&outFields=*&f=geojson';
+        const vectorSource = new ol.source.Vector({
+            format: new ol.format.GeoJSON(),
+            url: featureUrl,
+            strategy: ol.loadingstrategy.all
+        });
+        const featureLayer = new ol.layer.Vector({
+            source: vectorSource,
+            style: new ol.style.Style({
+                stroke: new ol.style.Stroke({ color: 'rgba(0, 128, 0, 1.0)', width: 2 }),
+                fill: new ol.style.Fill({ color: 'rgba(0,128,0,0.1)' })
+            })
+        });
+        map.addLayer(featureLayer);
+        layerManager.push({layer: featureLayer, name: layerName, type: 'ArcGIS FeatureServer'});
+        updateLayerList();
+        alert('FeatureServer layer added. Data loading...');
+    } finally {
+        document.getElementById('loader').style.display = 'none';
+    }
+}
 
         // Bilgi notu: örnek URL göster
         // const serviceUrlExample = document.getElementById('service-url-example');
